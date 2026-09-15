@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -8,14 +8,35 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 )
 
+const ADMIN_PASSWORD = 'autorama2026'
+const LOGIN_KEY = 'autorama_admin_login'
+const LOGIN_DURATION = 24 * 60 * 60 * 1000 // 24 ore
+
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [loggedIn, setLoggedIn] = useState(false)
+  const [checkingLogin, setCheckingLogin] = useState(true)
   const [results, setResults] = useState([])
   const [totalVotes, setTotalVotes] = useState(0)
   const [message, setMessage] = useState('')
 
-  const ADMIN_PASSWORD = 'autorama2026'
+  useEffect(() => {
+    const savedLogin = localStorage.getItem(LOGIN_KEY)
+
+    if (savedLogin) {
+      const loginTime = Number(savedLogin)
+      const now = Date.now()
+
+      if (now - loginTime < LOGIN_DURATION) {
+        setLoggedIn(true)
+        loadResults()
+      } else {
+        localStorage.removeItem(LOGIN_KEY)
+      }
+    }
+
+    setCheckingLogin(false)
+  }, [])
 
   async function loadResults() {
     setMessage('Caricamento risultati...')
@@ -67,12 +88,34 @@ export default function AdminPage() {
 
   function login() {
     if (password === ADMIN_PASSWORD) {
+      localStorage.setItem(LOGIN_KEY, Date.now().toString())
+
       setLoggedIn(true)
       setPassword('')
+      setMessage('')
       loadResults()
     } else {
       setMessage('Password errata.')
     }
+  }
+
+  function logout() {
+    localStorage.removeItem(LOGIN_KEY)
+    setLoggedIn(false)
+    setResults([])
+    setTotalVotes(0)
+    setMessage('')
+  }
+
+  if (checkingLogin) {
+    return (
+      <main style={styles.page}>
+        <div style={styles.loginBox}>
+          <div style={styles.kicker}>AUTORAMA 2026</div>
+          <div style={styles.message}>Caricamento...</div>
+        </div>
+      </main>
+    )
   }
 
   if (!loggedIn) {
@@ -167,6 +210,13 @@ export default function AdminPage() {
           style={styles.refresh}
         >
           AGGIORNA RISULTATI
+        </button>
+
+        <button
+          onClick={logout}
+          style={styles.logout}
+        >
+          ESCI DALL&apos;ADMIN
         </button>
       </div>
     </main>
@@ -297,5 +347,17 @@ const styles = {
     color: '#000000',
     fontWeight: 900,
     fontSize: 16
+  },
+
+  logout: {
+    width: '100%',
+    padding: 15,
+    marginTop: 12,
+    border: '1px solid #555555',
+    borderRadius: 10,
+    background: '#171717',
+    color: '#ffffff',
+    fontWeight: 800,
+    fontSize: 15
   }
 }
