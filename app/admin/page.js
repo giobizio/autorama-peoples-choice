@@ -137,7 +137,18 @@ export default function AdminPage() {
 
     if (error) {
       console.error('Reset error:', error)
-      setMessage('Errore durante l’azzeramento dei voti.')
+
+      setMessage(
+        'ERRORE SUPABASE: ' +
+        (error.message || '') +
+        ' | DETTAGLI: ' +
+        (error.details || '') +
+        ' | SUGGERIMENTO: ' +
+        (error.hint || '') +
+        ' | CODICE: ' +
+        (error.code || '')
+      )
+
       return
     }
 
@@ -212,7 +223,7 @@ export default function AdminPage() {
         </div>
 
         {message && (
-          <div style={styles.message}>
+          <div style={styles.errorMessage}>
             {message}
           </div>
         )}
@@ -341,6 +352,20 @@ const styles = {
     marginTop: 18,
     marginBottom: 18,
     textAlign: 'center'
+  },
+
+  errorMessage: {
+    marginTop: 18,
+    marginBottom: 18,
+    padding: 14,
+    background: '#2a1010',
+    border: '1px solid #ff4444',
+    borderRadius: 10,
+    color: '#ff8888',
+    textAlign: 'center',
+    fontSize: 14,
+    lineHeight: 1.5,
+    wordBreak: 'break-word'
   },
 
   total: {
