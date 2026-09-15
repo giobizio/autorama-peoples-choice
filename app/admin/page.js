@@ -10,7 +10,7 @@ const supabase = createClient(
 
 const ADMIN_PASSWORD = 'autorama2026'
 const LOGIN_KEY = 'autorama_admin_login'
-const LOGIN_DURATION = 24 * 60 * 60 * 1000 // 24 ore
+const LOGIN_DURATION = 24 * 60 * 60 * 1000
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -105,6 +105,51 @@ export default function AdminPage() {
     setResults([])
     setTotalVotes(0)
     setMessage('')
+  }
+
+  async function resetVotes() {
+    const enteredPassword = window.prompt(
+      'Inserisci nuovamente la password Admin per azzerare tutti i voti:'
+    )
+
+    if (enteredPassword === null) {
+      return
+    }
+
+    if (!enteredPassword) {
+      window.alert('Password non inserita.')
+      return
+    }
+
+    const confirmed = window.confirm(
+      'ATTENZIONE: stai per cancellare TUTTI i voti. Questa operazione non può essere annullata.\n\nSei sicuro di voler continuare?'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setMessage('Azzeramento voti in corso...')
+
+    const { data, error } = await supabase.rpc('reset_all_votes', {
+      p_password: enteredPassword
+    })
+
+    if (error) {
+      console.error('Reset error:', error)
+      setMessage('Errore durante l’azzeramento dei voti.')
+      return
+    }
+
+    if (data === 'wrong_password') {
+      setMessage('Password errata. I voti NON sono stati cancellati.')
+      return
+    }
+
+    if (data === 'ok') {
+      await loadResults()
+      window.alert('Tutti i voti sono stati azzerati.')
+    }
   }
 
   if (checkingLogin) {
@@ -210,6 +255,13 @@ export default function AdminPage() {
           style={styles.refresh}
         >
           AGGIORNA RISULTATI
+        </button>
+
+        <button
+          onClick={resetVotes}
+          style={styles.reset}
+        >
+          AZZERA TUTTI I VOTI
         </button>
 
         <button
@@ -345,6 +397,18 @@ const styles = {
     borderRadius: 10,
     background: '#ffffff',
     color: '#000000',
+    fontWeight: 900,
+    fontSize: 16
+  },
+
+  reset: {
+    width: '100%',
+    padding: 16,
+    marginTop: 12,
+    border: '2px solid #ff4444',
+    borderRadius: 10,
+    background: '#2a1010',
+    color: '#ff6666',
     fontWeight: 900,
     fontSize: 16
   },
