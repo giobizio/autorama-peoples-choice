@@ -21,8 +21,7 @@ export default function AdminPage() {
     setMessage('Caricamento risultati...')
 
     const { data: cars, error: carsError } = await supabase
-      .from('cars')
-      .select('id,name')
+      .rpc('get_vote_results')
       .eq('active', true)
       .order('id')
 
