@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -21,23 +21,25 @@ export default function AdminPage() {
     setMessage('Caricamento risultati...')
 
     const { data: cars, error: carsError } = await supabase
-      .rpc('get_vote_results')
+      .from('cars')
+      .select('id,name')
       .eq('active', true)
       .order('id')
 
-    const { data: votes, error: votesError } = await supabase
-      .from('votes')
-      .select('car_id')
+    const { data: voteResults, error: votesError } = await supabase
+      .rpc('get_vote_results')
 
     if (carsError || votesError) {
+      console.error('Cars error:', carsError)
+      console.error('Votes error:', votesError)
       setMessage('Errore nel caricamento dei risultati.')
       return
     }
 
     const counts = {}
 
-    for (const vote of votes || []) {
-      counts[vote.car_id] = (counts[vote.car_id] || 0) + 1
+    for (const row of voteResults || []) {
+      counts[row.car_id] = Number(row.vote_count)
     }
 
     const finalResults = (cars || [])
@@ -45,10 +47,21 @@ export default function AdminPage() {
         ...car,
         votes: counts[car.id] || 0
       }))
-      .sort((a, b) => b.votes - a.votes)
+      .sort((a, b) => {
+        if (b.votes !== a.votes) {
+          return b.votes - a.votes
+        }
+
+        return a.id - b.id
+      })
+
+    const total = (voteResults || []).reduce(
+      (sum, row) => sum + Number(row.vote_count),
+      0
+    )
 
     setResults(finalResults)
-    setTotalVotes((votes || []).length)
+    setTotalVotes(total)
     setMessage('')
   }
 
@@ -67,6 +80,7 @@ export default function AdminPage() {
       <main style={styles.page}>
         <div style={styles.loginBox}>
           <div style={styles.kicker}>AUTORAMA 2026</div>
+
           <h1 style={styles.title}>ADMIN</h1>
 
           <p style={styles.text}>
@@ -88,7 +102,11 @@ export default function AdminPage() {
             ACCEDI
           </button>
 
-          {message && <div style={styles.message}>{message}</div>}
+          {message && (
+            <div style={styles.message}>
+              {message}
+            </div>
+          )}
         </div>
       </main>
     )
@@ -98,11 +116,18 @@ export default function AdminPage() {
     <main style={styles.page}>
       <div style={styles.container}>
         <div style={styles.kicker}>AUTORAMA 2026</div>
+
         <h1 style={styles.title}>RISULTATI</h1>
 
         <div style={styles.total}>
           VOTI TOTALI: {totalVotes}
         </div>
+
+        {message && (
+          <div style={styles.message}>
+            {message}
+          </div>
+        )}
 
         {results.map((car, index) => {
           const percentage =
@@ -117,19 +142,30 @@ export default function AdminPage() {
                   {index + 1}° — #{String(car.id).padStart(2, '0')}
                 </div>
 
-                <div style={styles.carName}>{car.name}</div>
+                <div style={styles.carName}>
+                  {car.name}
+                </div>
               </div>
 
               <div style={styles.voteCount}>
                 {car.votes}
-                <span style={styles.voteLabel}> voti</span>
-                <div style={styles.percentage}>{percentage}%</div>
+
+                <span style={styles.voteLabel}>
+                  {' '}voti
+                </span>
+
+                <div style={styles.percentage}>
+                  {percentage}%
+                </div>
               </div>
             </div>
           )
         })}
 
-        <button onClick={loadResults} style={styles.refresh}>
+        <button
+          onClick={loadResults}
+          style={styles.refresh}
+        >
           AGGIORNA RISULTATI
         </button>
       </div>
@@ -201,6 +237,7 @@ const styles = {
 
   message: {
     marginTop: 18,
+    marginBottom: 18,
     textAlign: 'center'
   },
 
