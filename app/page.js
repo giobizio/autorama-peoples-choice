@@ -1,6 +1,7 @@
 'use client'
-// Autorama 2026
+
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -20,12 +21,13 @@ function getVoterId() {
 }
 
 export default function Home() {
+  const router = useRouter()
+
   const [cars, setCars] = useState([])
   const [selected, setSelected] = useState(null)
   const [message, setMessage] = useState('')
-  const [voted, setVoted] = useState(false)
-  const [email, setEmail] = useState('')
-  const [emailMessage, setEmailMessage] = useState('')
+  const [alreadyVoted, setAlreadyVoted] = useState(false)
+  const [voting, setVoting] = useState(false)
 
   useEffect(() => {
     loadCars()
@@ -52,6 +54,14 @@ export default function Home() {
       return
     }
 
+    if (voting) {
+      return
+    }
+
+    setVoting(true)
+    setMessage('')
+    setAlreadyVoted(false)
+
     const voterId = getVoterId()
 
     const { data, error } = await supabase.rpc('submit_vote', {
@@ -60,60 +70,88 @@ export default function Home() {
     })
 
     if (error) {
+      setVoting(false)
       setMessage('Errore durante il voto. Riprova.')
       return
     }
 
     if (data === 'already_voted') {
-      setMessage('Hai già votato da questo dispositivo.')
-      setVoted(true)
+      setVoting(false)
+      setAlreadyVoted(true)
+      setSelected(null)
       return
     }
 
     if (data === 'ok') {
-      setMessage('Voto registrato!')
-      setVoted(true)
-    }
-  }
-
-  async function saveEmail() {
-    if (!email) return
-
-    const { data, error } = await supabase.rpc('register_result_email', {
-      p_email: email
-    })
-
-    if (error || data === 'invalid_email') {
-      setEmailMessage('Inserisci un indirizzo e-mail valido.')
+      router.push('/grazie')
       return
     }
 
-    setEmailMessage('Perfetto! Ti comunicheremo il risultato.')
-    setEmail('')
+    setVoting(false)
+    setMessage('Errore durante il voto. Riprova.')
   }
 
   return (
     <main style={styles.page}>
       <div style={styles.container}>
-        <div style={styles.kicker}>AUTORAMA 2026</div>
 
-        <h1 style={styles.title}>PEOPLE&apos;S CHOICE</h1>
+        <div style={styles.kicker}>
+          AUTORAMA 2026
+        </div>
+
+        <h1 style={styles.title}>
+          PEOPLE&apos;S CHOICE
+        </h1>
 
         <p style={styles.subtitle}>
           Vota la tua auto preferita
         </p>
 
+        {alreadyVoted && (
+          <div style={styles.alreadyVotedBox}>
+
+            <div style={styles.stopIcon}>
+              !
+            </div>
+
+            <div style={styles.alreadyVotedTitle}>
+              HAI GIÀ VOTATO
+            </div>
+
+            <div style={styles.alreadyVotedSubtitle}>
+              DA QUESTO DISPOSITIVO
+            </div>
+
+            <div style={styles.alreadyVotedText}>
+              Grazie per aver partecipato!
+              <br />
+              È consentito un solo voto per dispositivo.
+            </div>
+
+          </div>
+        )}
+
         <div style={styles.grid}>
+
           {cars.map((car) => (
             <button
               key={car.id}
-              onClick={() => !voted && setSelected(car.id)}
+              onClick={() => {
+                if (!voting && !alreadyVoted) {
+                  setSelected(car.id)
+                  setMessage('')
+                }
+              }}
               style={{
                 ...styles.card,
-                ...(selected === car.id ? styles.selectedCard : {})
+                ...(selected === car.id
+                  ? styles.selectedCard
+                  : {})
               }}
             >
+
               <div style={styles.imageBox}>
+
                 {car.photo_url ? (
                   <img
                     src={car.photo_url}
@@ -129,23 +167,33 @@ export default function Home() {
                 <div style={styles.number}>
                   #{String(car.id).padStart(2, '0')}
                 </div>
+
               </div>
 
-              <div style={styles.carName}>{car.name}</div>
+              <div style={styles.carName}>
+                {car.name}
+              </div>
+
             </button>
           ))}
+
         </div>
 
-        {!voted && (
+        {!alreadyVoted && (
           <button
             onClick={vote}
-            disabled={!selected}
+            disabled={!selected || voting}
             style={{
               ...styles.voteButton,
-              opacity: selected ? 1 : 0.4
+              opacity:
+                selected && !voting
+                  ? 1
+                  : 0.4
             }}
           >
-            VOTA
+            {voting
+              ? 'REGISTRAZIONE...'
+              : 'VOTA'}
           </button>
         )}
 
@@ -155,36 +203,6 @@ export default function Home() {
           </div>
         )}
 
-        {voted && (
-          <section style={styles.emailSection}>
-            <h2 style={styles.emailTitle}>
-              Vuoi sapere quale auto ha vinto?
-            </h2>
-
-            <p style={styles.emailText}>
-              Lascia la tua e-mail e ti comunicheremo il risultato della
-              People&apos;s Choice dopo la premiazione.
-            </p>
-
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="La tua e-mail"
-              style={styles.input}
-            />
-
-            <button onClick={saveEmail} style={styles.emailButton}>
-              AVVISAMI DEL RISULTATO
-            </button>
-
-            {emailMessage && (
-              <div style={styles.emailMessage}>
-                {emailMessage}
-              </div>
-            )}
-          </section>
-        )}
       </div>
     </main>
   )
@@ -224,6 +242,50 @@ const styles = {
     fontSize: 18,
     color: '#cccccc',
     marginBottom: 32
+  },
+
+  alreadyVotedBox: {
+    marginBottom: 28,
+    padding: '25px 18px',
+    background: '#2a1010',
+    border: '2px solid #ff4444',
+    borderRadius: 16,
+    textAlign: 'center'
+  },
+
+  stopIcon: {
+    width: 55,
+    height: 55,
+    margin: '0 auto 15px',
+    border: '3px solid #ff5555',
+    borderRadius: '50%',
+    color: '#ff5555',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 34,
+    fontWeight: 900
+  },
+
+  alreadyVotedTitle: {
+    color: '#ff5555',
+    fontSize: 'clamp(28px, 8vw, 42px)',
+    lineHeight: 1,
+    fontWeight: 900
+  },
+
+  alreadyVotedSubtitle: {
+    color: '#ffffff',
+    fontSize: 'clamp(19px, 5vw, 27px)',
+    fontWeight: 900,
+    marginTop: 8
+  },
+
+  alreadyVotedText: {
+    color: '#cccccc',
+    fontSize: 16,
+    lineHeight: 1.5,
+    marginTop: 18
   },
 
   grid: {
@@ -308,51 +370,5 @@ const styles = {
     textAlign: 'center',
     fontSize: 18,
     fontWeight: 700
-  },
-
-  emailSection: {
-    marginTop: 34,
-    padding: 22,
-    background: '#171717',
-    borderRadius: 16
-  },
-
-  emailTitle: {
-    marginTop: 0,
-    fontSize: 26
-  },
-
-  emailText: {
-    color: '#cccccc',
-    lineHeight: 1.5
-  },
-
-  input: {
-    width: '100%',
-    boxSizing: 'border-box',
-    padding: '15px',
-    marginTop: 10,
-    background: '#0b0b0b',
-    color: '#ffffff',
-    border: '1px solid #444444',
-    borderRadius: 10,
-    fontSize: 16
-  },
-
-  emailButton: {
-    width: '100%',
-    padding: '15px',
-    marginTop: 12,
-    border: 0,
-    borderRadius: 10,
-    background: '#ffffff',
-    color: '#000000',
-    fontWeight: 900,
-    fontSize: 16
-  },
-
-  emailMessage: {
-    marginTop: 14,
-    textAlign: 'center'
   }
 }
