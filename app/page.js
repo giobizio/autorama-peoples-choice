@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
@@ -22,6 +22,7 @@ function getVoterId() {
 
 export default function Home() {
   const router = useRouter()
+  const alreadyVotedRef = useRef(null)
 
   const [cars, setCars] = useState([])
   const [selected, setSelected] = useState(null)
@@ -32,6 +33,17 @@ export default function Home() {
   useEffect(() => {
     loadCars()
   }, [])
+
+  useEffect(() => {
+    if (alreadyVoted && alreadyVotedRef.current) {
+      setTimeout(() => {
+        alreadyVotedRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        })
+      }, 100)
+    }
+  }, [alreadyVoted])
 
   async function loadCars() {
     const { data, error } = await supabase
@@ -108,8 +120,10 @@ export default function Home() {
         </p>
 
         {alreadyVoted && (
-          <div style={styles.alreadyVotedBox}>
-
+          <div
+            ref={alreadyVotedRef}
+            style={styles.alreadyVotedBox}
+          >
             <div style={styles.stopIcon}>
               !
             </div>
@@ -127,12 +141,10 @@ export default function Home() {
               <br />
               È consentito un solo voto per dispositivo.
             </div>
-
           </div>
         )}
 
         <div style={styles.grid}>
-
           {cars.map((car) => (
             <button
               key={car.id}
@@ -149,7 +161,6 @@ export default function Home() {
                   : {})
               }}
             >
-
               <div style={styles.imageBox}>
 
                 {car.photo_url ? (
@@ -173,10 +184,8 @@ export default function Home() {
               <div style={styles.carName}>
                 {car.name}
               </div>
-
             </button>
           ))}
-
         </div>
 
         {!alreadyVoted && (
