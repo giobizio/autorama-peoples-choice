@@ -117,6 +117,7 @@ export default function Home() {
   return (
     <main style={styles.page}>
       <div style={styles.container}>
+
         <div style={styles.kicker}>
           AUTORAMA 2026
         </div>
@@ -147,6 +148,7 @@ export default function Home() {
               }}
             >
               <div style={styles.imageBox}>
+
                 {car.photo_url ? (
                   <img
                     src={car.photo_url}
@@ -164,11 +166,13 @@ export default function Home() {
                     #{String(car.display_number).padStart(2, '0')}
                   </div>
                 )}
+
               </div>
 
               <div style={styles.carName}>
                 {car.name}
               </div>
+
             </button>
           ))}
         </div>
@@ -185,7 +189,9 @@ export default function Home() {
                   : 0.4
             }}
           >
-            {voting ? 'REGISTRAZIONE...' : 'VOTA'}
+            {voting
+              ? 'REGISTRAZIONE...'
+              : 'VOTA'}
           </button>
         )}
 
@@ -194,6 +200,7 @@ export default function Home() {
             ref={warningRef}
             style={styles.alreadyVotedBox}
           >
+
             <div style={styles.stopIcon}>
               !
             </div>
@@ -211,6 +218,7 @@ export default function Home() {
               <br />
               È consentito un solo voto per dispositivo.
             </div>
+
           </div>
         )}
 
@@ -219,6 +227,7 @@ export default function Home() {
             {message}
           </div>
         )}
+
       </div>
     </main>
   )
@@ -286,14 +295,14 @@ const styles = {
     position: 'relative',
     width: '100%',
     aspectRatio: '4 / 3',
-    background: '#d0d0d0',
+    background: '#222222',
     overflow: 'hidden'
   },
 
   image: {
     width: '100%',
     height: '100%',
-    objectFit: 'contain',
+    objectFit: 'cover',
     objectPosition: 'center',
     display: 'block'
   },
