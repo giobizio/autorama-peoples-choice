@@ -22,7 +22,7 @@ function getVoterId() {
 
 export default function Home() {
   const router = useRouter()
-  const alreadyVotedRef = useRef(null)
+  const warningRef = useRef(null)
 
   const [cars, setCars] = useState([])
   const [selected, setSelected] = useState(null)
@@ -35,29 +35,40 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (alreadyVoted && alreadyVotedRef.current) {
-      setTimeout(() => {
-        alreadyVotedRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        })
-      }, 100)
+    if (alreadyVoted && warningRef.current) {
+      warningRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      })
     }
   }, [alreadyVoted])
 
   async function loadCars() {
     const { data, error } = await supabase
       .from('cars')
-      .select('id,name,photo_url')
+      .select('id,name,photo_url,display_number')
       .eq('active', true)
-      .order('id')
 
     if (error) {
       setMessage('Errore nel caricamento delle auto.')
       return
     }
 
-    setCars(data || [])
+    const sortedCars = (data || []).sort((a, b) => {
+      const aHasNumber = a.display_number !== null
+      const bHasNumber = b.display_number !== null
+
+      if (aHasNumber && bHasNumber) {
+        return a.display_number - b.display_number
+      }
+
+      if (aHasNumber) return -1
+      if (bHasNumber) return 1
+
+      return a.id - b.id
+    })
+
+    setCars(sortedCars)
   }
 
   async function vote() {
@@ -106,7 +117,6 @@ export default function Home() {
   return (
     <main style={styles.page}>
       <div style={styles.container}>
-
         <div style={styles.kicker}>
           AUTORAMA 2026
         </div>
@@ -119,9 +129,69 @@ export default function Home() {
           Vota la tua auto preferita
         </p>
 
+        <div style={styles.grid}>
+          {cars.map((car) => (
+            <button
+              key={car.id}
+              onClick={() => {
+                if (!voting && !alreadyVoted) {
+                  setSelected(car.id)
+                  setMessage('')
+                }
+              }}
+              style={{
+                ...styles.card,
+                ...(selected === car.id
+                  ? styles.selectedCard
+                  : {})
+              }}
+            >
+              <div style={styles.imageBox}>
+                {car.photo_url ? (
+                  <img
+                    src={car.photo_url}
+                    alt={car.name}
+                    style={styles.image}
+                  />
+                ) : (
+                  <div style={styles.placeholder}>
+                    FOTO
+                  </div>
+                )}
+
+                {car.display_number !== null && (
+                  <div style={styles.number}>
+                    #{String(car.display_number).padStart(2, '0')}
+                  </div>
+                )}
+              </div>
+
+              <div style={styles.carName}>
+                {car.name}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {!alreadyVoted && (
+          <button
+            onClick={vote}
+            disabled={!selected || voting}
+            style={{
+              ...styles.voteButton,
+              opacity:
+                selected && !voting
+                  ? 1
+                  : 0.4
+            }}
+          >
+            {voting ? 'REGISTRAZIONE...' : 'VOTA'}
+          </button>
+        )}
+
         {alreadyVoted && (
           <div
-            ref={alreadyVotedRef}
+            ref={warningRef}
             style={styles.alreadyVotedBox}
           >
             <div style={styles.stopIcon}>
@@ -144,74 +214,11 @@ export default function Home() {
           </div>
         )}
 
-        <div style={styles.grid}>
-          {cars.map((car) => (
-            <button
-              key={car.id}
-              onClick={() => {
-                if (!voting && !alreadyVoted) {
-                  setSelected(car.id)
-                  setMessage('')
-                }
-              }}
-              style={{
-                ...styles.card,
-                ...(selected === car.id
-                  ? styles.selectedCard
-                  : {})
-              }}
-            >
-              <div style={styles.imageBox}>
-
-                {car.photo_url ? (
-                  <img
-                    src={car.photo_url}
-                    alt={car.name}
-                    style={styles.image}
-                  />
-                ) : (
-                  <div style={styles.placeholder}>
-                    FOTO
-                  </div>
-                )}
-
-                <div style={styles.number}>
-                  #{String(car.id).padStart(2, '0')}
-                </div>
-
-              </div>
-
-              <div style={styles.carName}>
-                {car.name}
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {!alreadyVoted && (
-          <button
-            onClick={vote}
-            disabled={!selected || voting}
-            style={{
-              ...styles.voteButton,
-              opacity:
-                selected && !voting
-                  ? 1
-                  : 0.4
-            }}
-          >
-            {voting
-              ? 'REGISTRAZIONE...'
-              : 'VOTA'}
-          </button>
-        )}
-
         {message && (
           <div style={styles.message}>
             {message}
           </div>
         )}
-
       </div>
     </main>
   )
@@ -253,13 +260,95 @@ const styles = {
     marginBottom: 32
   },
 
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: 14
+  },
+
+  card: {
+    padding: 0,
+    background: '#171717',
+    border: '2px solid #292929',
+    borderRadius: 14,
+    overflow: 'hidden',
+    color: '#ffffff',
+    textAlign: 'left',
+    cursor: 'pointer'
+  },
+
+  selectedCard: {
+    border: '3px solid #ffffff',
+    transform: 'scale(1.02)'
+  },
+
+  imageBox: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: '4 / 3',
+    background: '#d0d0d0',
+    overflow: 'hidden'
+  },
+
+  image: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+    objectPosition: 'center',
+    display: 'block'
+  },
+
+  placeholder: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#666666',
+    fontSize: 22,
+    fontWeight: 'bold'
+  },
+
+  number: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    background: 'rgba(0, 0, 0, 0.72)',
+    color: '#ffffff',
+    border: '1px solid rgba(255, 255, 255, 0.8)',
+    borderRadius: 6,
+    padding: '4px 7px',
+    fontSize: 15,
+    fontWeight: 900,
+    lineHeight: 1
+  },
+
+  carName: {
+    padding: '12px 12px 14px',
+    fontWeight: 800,
+    fontSize: 17
+  },
+
+  voteButton: {
+    width: '100%',
+    marginTop: 28,
+    padding: '18px 20px',
+    fontSize: 22,
+    fontWeight: 900,
+    border: 0,
+    borderRadius: 12,
+    background: '#ffffff',
+    color: '#000000'
+  },
+
   alreadyVotedBox: {
-    marginBottom: 28,
+    marginTop: 30,
     padding: '25px 18px',
     background: '#2a1010',
     border: '2px solid #ff4444',
     borderRadius: 16,
-    textAlign: 'center'
+    textAlign: 'center',
+    scrollMargin: '80px 0'
   },
 
   stopIcon: {
@@ -295,83 +384,6 @@ const styles = {
     fontSize: 16,
     lineHeight: 1.5,
     marginTop: 18
-  },
-
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    gap: 14
-  },
-
-  card: {
-    padding: 0,
-    background: '#171717',
-    border: '2px solid #292929',
-    borderRadius: 14,
-    overflow: 'hidden',
-    color: '#ffffff',
-    textAlign: 'left',
-    cursor: 'pointer'
-  },
-
-  selectedCard: {
-    border: '3px solid #ffffff',
-    transform: 'scale(1.02)'
-  },
-
-  imageBox: {
-    position: 'relative',
-    width: '100%',
-    aspectRatio: '4 / 3',
-    background: '#222222'
-  },
-
-  image: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    display: 'block'
-  },
-
-  placeholder: {
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#666666',
-    fontSize: 22,
-    fontWeight: 'bold'
-  },
-
-  number: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    background: '#ffffff',
-    color: '#000000',
-    borderRadius: 8,
-    padding: '6px 10px',
-    fontSize: 18,
-    fontWeight: 900
-  },
-
-  carName: {
-    padding: '12px 12px 14px',
-    fontWeight: 800,
-    fontSize: 17
-  },
-
-  voteButton: {
-    width: '100%',
-    marginTop: 28,
-    padding: '18px 20px',
-    fontSize: 22,
-    fontWeight: 900,
-    border: 0,
-    borderRadius: 12,
-    background: '#ffffff',
-    color: '#000000'
   },
 
   message: {
