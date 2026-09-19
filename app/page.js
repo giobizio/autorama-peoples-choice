@@ -147,6 +147,7 @@ export default function Home() {
                   : {})
               }}
             >
+
               <div style={styles.imageBox}>
 
                 {car.photo_url ? (
@@ -294,7 +295,7 @@ const styles = {
   imageBox: {
     position: 'relative',
     width: '100%',
-    aspectRatio: '4 / 3',
+    aspectRatio: '1500 / 1150',
     background: '#222222',
     overflow: 'hidden'
   },
@@ -302,8 +303,7 @@ const styles = {
   image: {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
-    objectPosition: 'center',
+    objectFit: 'fill',
     display: 'block'
   },
 
