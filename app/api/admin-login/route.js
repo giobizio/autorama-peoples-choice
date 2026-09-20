@@ -66,3 +66,16 @@ export async function POST(request) {
     )
   }
 }
+
+export async function DELETE() {
+  const response = Response.json({
+    ok: true
+  })
+
+  response.headers.append(
+    'Set-Cookie',
+    `${COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`
+  )
+
+  return response
+}
