@@ -320,8 +320,8 @@ const styles = {
 
   number: {
     position: 'absolute',
-    bottom: 8,
-    left: 8,
+    bottom: 3,
+    right: 3,
     background: 'rgba(0, 0, 0, 0.72)',
     color: '#ffffff',
     border: '1px solid rgba(255, 255, 255, 0.8)',
