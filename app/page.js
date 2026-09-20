@@ -335,7 +335,9 @@ const styles = {
   carName: {
     padding: '12px 12px 14px',
     fontWeight: 800,
-    fontSize: 17
+    fontSize: 17,
+    lineHeight: 1.2,
+    minHeight: '40.8px'
   },
 
   voteButton: {
