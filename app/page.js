@@ -77,9 +77,7 @@ export default function Home() {
       return
     }
 
-    if (voting) {
-      return
-    }
+    if (voting) return
 
     setVoting(true)
     setMessage('')
@@ -147,7 +145,6 @@ export default function Home() {
                   : {})
               }}
             >
-
               <div style={styles.imageBox}>
 
                 {car.photo_url ? (
@@ -173,7 +170,6 @@ export default function Home() {
               <div style={styles.carName}>
                 {car.name}
               </div>
-
             </button>
           ))}
         </div>
@@ -184,15 +180,10 @@ export default function Home() {
             disabled={!selected || voting}
             style={{
               ...styles.voteButton,
-              opacity:
-                selected && !voting
-                  ? 1
-                  : 0.4
+              opacity: selected && !voting ? 1 : 0.4
             }}
           >
-            {voting
-              ? 'REGISTRAZIONE...'
-              : 'VOTA'}
+            {voting ? 'REGISTRAZIONE...' : 'VOTA'}
           </button>
         )}
 
@@ -201,7 +192,6 @@ export default function Home() {
             ref={warningRef}
             style={styles.alreadyVotedBox}
           >
-
             <div style={styles.stopIcon}>
               !
             </div>
@@ -219,7 +209,6 @@ export default function Home() {
               <br />
               È consentito un solo voto per dispositivo.
             </div>
-
           </div>
         )}
 
@@ -237,59 +226,67 @@ export default function Home() {
 const styles = {
   page: {
     minHeight: '100vh',
-    background: '#0b0b0b',
+    background: '#080808',
     color: '#ffffff',
     fontFamily: 'Arial, Helvetica, sans-serif',
-    padding: '28px 14px 60px'
+    padding: '70px 24px 80px'
   },
 
   container: {
-    maxWidth: 900,
-    margin: '0 auto'
+    width: '100%',
+    maxWidth: '760px',
+    margin: '0 auto',
+    textAlign: 'center'
   },
 
   kicker: {
-    textAlign: 'center',
-    letterSpacing: 4,
-    fontSize: 14,
+    fontSize: '20px',
+    letterSpacing: '8px',
     color: '#aaaaaa',
-    marginTop: 12
+    marginBottom: '22px'
   },
 
   title: {
-    textAlign: 'center',
-    fontSize: 'clamp(34px, 9vw, 68px)',
-    lineHeight: 0.95,
-    margin: '14px 0 10px'
+    margin: 0,
+    fontSize: '56px',
+    lineHeight: 1,
+    fontWeight: '900',
+    letterSpacing: '-1px'
   },
 
   subtitle: {
-    textAlign: 'center',
-    fontSize: 18,
-    color: '#cccccc',
-    marginBottom: 32
+    marginTop: '30px',
+    marginBottom: '64px',
+    fontSize: '28px',
+    color: '#cccccc'
   },
 
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    gap: 14
+    gap: '26px',
+    alignItems: 'start'
   },
 
   card: {
+    width: '100%',
     padding: 0,
-    background: '#171717',
-    border: '2px solid #292929',
-    borderRadius: 14,
+    margin: 0,
+    border: '3px solid #292929',
+    borderRadius: '24px',
     overflow: 'hidden',
+    background: '#151515',
     color: '#ffffff',
     textAlign: 'left',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    boxSizing: 'border-box'
   },
 
   selectedCard: {
     border: '3px solid #ffffff',
-    transform: 'scale(1.02)'
+    boxShadow: '0 0 0 3px rgba(255,255,255,0.18)'
   },
 
   imageBox: {
@@ -313,92 +310,96 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#666666',
-    fontSize: 22,
-    fontWeight: 'bold'
+    background: '#222222',
+    color: '#777777',
+    fontSize: '24px'
   },
 
   number: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+
+    // NUMERO DI GARA:
+    // 8 px dal bordo sinistro e dal bordo inferiore
+    left: '8px',
+    bottom: '8px',
+
+    padding: '5px 10px',
+    borderRadius: '10px',
     background: 'rgba(0, 0, 0, 0.72)',
+    border: '2px solid rgba(255, 255, 255, 0.75)',
     color: '#ffffff',
-    border: '1px solid rgba(255, 255, 255, 0.8)',
-    borderRadius: 6,
-    padding: '4px 7px',
-    fontSize: 15,
-    fontWeight: 900,
-    lineHeight: 1
+    fontSize: '24px',
+    lineHeight: 1,
+    fontWeight: '900',
+    letterSpacing: '0.5px'
   },
 
   carName: {
-    padding: '12px 12px 14px',
-    fontWeight: 800,
-    fontSize: 17
+    padding: '24px 22px 26px',
+    fontSize: '28px',
+    lineHeight: 1.25,
+    fontWeight: '800',
+    color: '#ffffff'
   },
 
   voteButton: {
     width: '100%',
-    marginTop: 28,
-    padding: '18px 20px',
-    fontSize: 22,
-    fontWeight: 900,
-    border: 0,
-    borderRadius: 12,
+    marginTop: '56px',
+    padding: '26px 20px',
+    border: 'none',
+    borderRadius: '22px',
     background: '#ffffff',
-    color: '#000000'
+    color: '#000000',
+    fontSize: '32px',
+    fontWeight: '900',
+    cursor: 'pointer'
   },
 
   alreadyVotedBox: {
-    marginTop: 30,
-    padding: '25px 18px',
-    background: '#2a1010',
-    border: '2px solid #ff4444',
-    borderRadius: 16,
-    textAlign: 'center',
-    scrollMargin: '80px 0'
+    marginTop: '56px',
+    padding: '34px 24px',
+    border: '3px solid #ffffff',
+    borderRadius: '24px',
+    background: '#151515',
+    textAlign: 'center'
   },
 
   stopIcon: {
-    width: 55,
-    height: 55,
-    margin: '0 auto 15px',
-    border: '3px solid #ff5555',
+    width: '52px',
+    height: '52px',
+    margin: '0 auto 18px',
     borderRadius: '50%',
-    color: '#ff5555',
+    background: '#ffffff',
+    color: '#000000',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 34,
-    fontWeight: 900
+    fontSize: '34px',
+    fontWeight: '900'
   },
 
   alreadyVotedTitle: {
-    color: '#ff5555',
-    fontSize: 'clamp(28px, 8vw, 42px)',
-    lineHeight: 1,
-    fontWeight: 900
+    fontSize: '30px',
+    fontWeight: '900'
   },
 
   alreadyVotedSubtitle: {
-    color: '#ffffff',
-    fontSize: 'clamp(19px, 5vw, 27px)',
-    fontWeight: 900,
-    marginTop: 8
+    marginTop: '5px',
+    fontSize: '20px',
+    fontWeight: '800',
+    color: '#cccccc'
   },
 
   alreadyVotedText: {
-    color: '#cccccc',
-    fontSize: 16,
+    marginTop: '20px',
+    fontSize: '18px',
     lineHeight: 1.5,
-    marginTop: 18
+    color: '#bbbbbb'
   },
 
   message: {
-    marginTop: 20,
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: 700
+    marginTop: '30px',
+    fontSize: '18px',
+    color: '#ffffff'
   }
 }
