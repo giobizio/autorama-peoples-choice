@@ -1,16 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-)
-
-const ADMIN_PASSWORD = 'autorama2026'
-const LOGIN_KEY = 'autorama_admin_login'
-const LOGIN_DURATION = 24 * 60 * 60 * 1000
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -21,106 +11,124 @@ export default function AdminPage() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    const savedLogin = localStorage.getItem(LOGIN_KEY)
+    checkSession()
+  }, [])
 
-    if (savedLogin) {
-      const loginTime = Number(savedLogin)
-      const now = Date.now()
+  async function checkSession() {
+    try {
+      const response = await fetch('/api/admin-session', {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store'
+      })
 
-      if (now - loginTime < LOGIN_DURATION) {
+      if (response.ok) {
         setLoggedIn(true)
-        loadResults()
+        await loadResults()
       } else {
-        localStorage.removeItem(LOGIN_KEY)
+        setLoggedIn(false)
       }
+    } catch (error) {
+      console.error('Session error:', error)
+      setLoggedIn(false)
     }
 
     setCheckingLogin(false)
-  }, [])
+  }
 
   async function loadResults() {
     setMessage('Caricamento risultati...')
 
-    const { data: cars, error: carsError } = await supabase
-      .from('cars')
-      .select('id,name')
-      .eq('active', true)
-      .order('id')
+    try {
+      const response = await fetch('/api/admin-results', {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store'
+      })
 
-    const { data: voteResults, error: votesError } = await supabase
-      .rpc('get_vote_results')
+      if (response.status === 401) {
+        setLoggedIn(false)
+        setResults([])
+        setTotalVotes(0)
+        setMessage('Sessione scaduta. Effettua nuovamente l’accesso.')
+        return
+      }
 
-    if (carsError || votesError) {
-      console.error('Cars error:', carsError)
-      console.error('Votes error:', votesError)
+      const data = await response.json()
+
+      if (!response.ok || !data.ok) {
+        setMessage('Errore nel caricamento dei risultati.')
+        return
+      }
+
+      setResults(data.results || [])
+      setTotalVotes(data.totalVotes || 0)
+      setMessage('')
+    } catch (error) {
+      console.error('Results error:', error)
       setMessage('Errore nel caricamento dei risultati.')
+    }
+  }
+
+  async function login() {
+    if (!password) {
+      setMessage('Inserisci la password.')
       return
     }
 
-    const counts = {}
+    setMessage('Accesso in corso...')
 
-    for (const row of voteResults || []) {
-      counts[row.car_id] = Number(row.vote_count)
-    }
-
-    const finalResults = (cars || [])
-      .map((car) => ({
-        ...car,
-        votes: counts[car.id] || 0
-      }))
-      .sort((a, b) => {
-        if (b.votes !== a.votes) {
-          return b.votes - a.votes
-        }
-
-        return a.id - b.id
+    try {
+      const response = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          password
+        })
       })
 
-    const total = (voteResults || []).reduce(
-      (sum, row) => sum + Number(row.vote_count),
-      0
-    )
+      if (response.status === 401) {
+        setMessage('Password errata.')
+        return
+      }
 
-    setResults(finalResults)
-    setTotalVotes(total)
-    setMessage('')
-  }
-
-  function login() {
-    if (password === ADMIN_PASSWORD) {
-      localStorage.setItem(LOGIN_KEY, Date.now().toString())
+      if (!response.ok) {
+        setMessage('Errore durante l’accesso.')
+        return
+      }
 
       setLoggedIn(true)
       setPassword('')
       setMessage('')
-      loadResults()
-    } else {
-      setMessage('Password errata.')
+
+      await loadResults()
+    } catch (error) {
+      console.error('Login error:', error)
+      setMessage('Errore durante l’accesso.')
     }
   }
 
-  function logout() {
-    localStorage.removeItem(LOGIN_KEY)
+  async function logout() {
+    try {
+      await fetch('/api/admin-login', {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+
     setLoggedIn(false)
     setResults([])
     setTotalVotes(0)
+    setPassword('')
     setMessage('')
   }
 
   async function resetVotes() {
-    const enteredPassword = window.prompt(
-      'Inserisci nuovamente la password Admin per azzerare tutti i voti:'
-    )
-
-    if (enteredPassword === null) {
-      return
-    }
-
-    if (!enteredPassword) {
-      window.alert('Password non inserita.')
-      return
-    }
-
     const confirmed = window.confirm(
       'ATTENZIONE: stai per cancellare TUTTI i voti. Questa operazione non può essere annullata.\n\nSei sicuro di voler continuare?'
     )
@@ -131,35 +139,32 @@ export default function AdminPage() {
 
     setMessage('Azzeramento voti in corso...')
 
-    const { data, error } = await supabase.rpc('reset_all_votes', {
-      p_password: enteredPassword
-    })
+    try {
+      const response = await fetch('/api/admin-reset', {
+        method: 'POST',
+        credentials: 'include'
+      })
 
-    if (error) {
-      console.error('Reset error:', error)
+      if (response.status === 401) {
+        setLoggedIn(false)
+        setResults([])
+        setTotalVotes(0)
+        setMessage('Sessione scaduta. Effettua nuovamente l’accesso.')
+        return
+      }
 
-      setMessage(
-        'ERRORE SUPABASE: ' +
-        (error.message || '') +
-        ' | DETTAGLI: ' +
-        (error.details || '') +
-        ' | SUGGERIMENTO: ' +
-        (error.hint || '') +
-        ' | CODICE: ' +
-        (error.code || '')
-      )
+      const data = await response.json()
 
-      return
-    }
+      if (!response.ok || !data.ok) {
+        setMessage('Errore durante l’azzeramento dei voti.')
+        return
+      }
 
-    if (data === 'wrong_password') {
-      setMessage('Password errata. I voti NON sono stati cancellati.')
-      return
-    }
-
-    if (data === 'ok') {
       await loadResults()
       window.alert('Tutti i voti sono stati azzerati.')
+    } catch (error) {
+      console.error('Reset error:', error)
+      setMessage('Errore durante l’azzeramento dei voti.')
     }
   }
 
