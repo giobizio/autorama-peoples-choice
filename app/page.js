@@ -263,9 +263,8 @@ const styles = {
 
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    gap: '26px',
-    alignItems: 'start'
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '26px'
   },
 
   card: {
@@ -311,32 +310,26 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     background: '#222222',
-    color: '#777777',
-    fontSize: '24px'
+    color: '#777777'
   },
 
   number: {
     position: 'absolute',
-
-    // NUMERO DI GARA:
-    // 8 px dal bordo sinistro e dal bordo inferiore
     left: '8px',
     bottom: '8px',
-
-    padding: '5px 10px',
-    borderRadius: '10px',
-    background: 'rgba(0, 0, 0, 0.72)',
-    border: '2px solid rgba(255, 255, 255, 0.75)',
+    padding: '4px 8px',
+    borderRadius: '8px',
+    background: 'rgba(0,0,0,0.72)',
+    border: '1px solid rgba(255,255,255,0.75)',
     color: '#ffffff',
-    fontSize: '24px',
+    fontSize: '18px',
     lineHeight: 1,
-    fontWeight: '900',
-    letterSpacing: '0.5px'
+    fontWeight: '900'
   },
 
   carName: {
-    padding: '24px 22px 26px',
-    fontSize: '28px',
+    padding: '18px 20px 20px',
+    fontSize: '22px',
     lineHeight: 1.25,
     fontWeight: '800',
     color: '#ffffff'
