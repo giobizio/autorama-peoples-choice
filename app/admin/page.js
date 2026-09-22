@@ -9,6 +9,8 @@ export default function AdminPage() {
   const [results, setResults] = useState([])
   const [totalVotes, setTotalVotes] = useState(0)
   const [message, setMessage] = useState('')
+  const [votingOpen, setVotingOpen] = useState(null)
+  const [changingVoting, setChangingVoting] = useState(false)
 
   useEffect(() => {
     checkSession()
@@ -25,6 +27,7 @@ export default function AdminPage() {
       if (response.ok) {
         setLoggedIn(true)
         await loadResults()
+        await loadVotingStatus()
       } else {
         setLoggedIn(false)
       }
@@ -70,6 +73,99 @@ export default function AdminPage() {
     }
   }
 
+  async function loadVotingStatus() {
+    try {
+      const response = await fetch('/api/admin-voting', {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store'
+      })
+
+      if (response.status === 401) {
+        setLoggedIn(false)
+        setVotingOpen(null)
+        setMessage('Sessione scaduta. Effettua nuovamente l’accesso.')
+        return
+      }
+
+      const data = await response.json()
+
+      if (!response.ok || !data.ok) {
+        setVotingOpen(null)
+        setMessage('Errore nel caricamento dello stato delle votazioni.')
+        return
+      }
+
+      setVotingOpen(data.votingOpen)
+    } catch (error) {
+      console.error('Voting status error:', error)
+      setVotingOpen(null)
+      setMessage('Errore nel caricamento dello stato delle votazioni.')
+    }
+  }
+
+  async function changeVotingStatus() {
+    if (votingOpen === null || changingVoting) {
+      return
+    }
+
+    const newStatus = !votingOpen
+
+    const confirmed = window.confirm(
+      newStatus
+        ? 'Vuoi APRIRE le votazioni?'
+        : 'Vuoi CHIUDERE le votazioni?'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setChangingVoting(true)
+    setMessage(
+      newStatus
+        ? 'Apertura votazioni in corso...'
+        : 'Chiusura votazioni in corso...'
+    )
+
+    try {
+      const response = await fetch('/api/admin-voting', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          votingOpen: newStatus
+        })
+      })
+
+      if (response.status === 401) {
+        setLoggedIn(false)
+        setVotingOpen(null)
+        setMessage('Sessione scaduta. Effettua nuovamente l’accesso.')
+        setChangingVoting(false)
+        return
+      }
+
+      const data = await response.json()
+
+      if (!response.ok || !data.ok) {
+        setMessage('Errore durante la modifica dello stato delle votazioni.')
+        setChangingVoting(false)
+        return
+      }
+
+      setVotingOpen(data.votingOpen)
+      setMessage('')
+      setChangingVoting(false)
+    } catch (error) {
+      console.error('Voting update error:', error)
+      setMessage('Errore durante la modifica dello stato delle votazioni.')
+      setChangingVoting(false)
+    }
+  }
+
   async function login() {
     if (!password) {
       setMessage('Inserisci la password.')
@@ -105,6 +201,7 @@ export default function AdminPage() {
       setMessage('')
 
       await loadResults()
+      await loadVotingStatus()
     } catch (error) {
       console.error('Login error:', error)
       setMessage('Errore durante l’accesso.')
@@ -124,6 +221,7 @@ export default function AdminPage() {
     setLoggedIn(false)
     setResults([])
     setTotalVotes(0)
+    setVotingOpen(null)
     setPassword('')
     setMessage('')
   }
@@ -226,6 +324,45 @@ export default function AdminPage() {
         <div style={styles.total}>
           VOTI TOTALI: {totalVotes}
         </div>
+
+        <div
+          style={{
+            ...styles.votingStatus,
+            ...(votingOpen === true
+              ? styles.votingOpen
+              : votingOpen === false
+                ? styles.votingClosed
+                : {})
+          }}
+        >
+          STATO VOTAZIONI:{' '}
+          {votingOpen === true
+            ? 'APERTE'
+            : votingOpen === false
+              ? 'CHIUSE'
+              : 'CARICAMENTO...'}
+        </div>
+
+        <button
+          onClick={changeVotingStatus}
+          disabled={votingOpen === null || changingVoting}
+          style={{
+            ...styles.votingButton,
+            ...(votingOpen === true
+              ? styles.closeVotingButton
+              : styles.openVotingButton),
+            opacity:
+              votingOpen === null || changingVoting
+                ? 0.5
+                : 1
+          }}
+        >
+          {changingVoting
+            ? 'ATTENDI...'
+            : votingOpen === true
+              ? 'CHIUDI VOTAZIONI'
+              : 'APRI VOTAZIONI'}
+        </button>
 
         {message && (
           <div style={styles.errorMessage}>
@@ -378,6 +515,50 @@ const styles = {
     fontSize: 22,
     fontWeight: 900,
     marginBottom: 30
+  },
+
+  votingStatus: {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: 18,
+    borderRadius: 12,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: 900,
+    marginBottom: 12
+  },
+
+  votingOpen: {
+    background: '#102a18',
+    border: '2px solid #3bd66f',
+    color: '#69e891'
+  },
+
+  votingClosed: {
+    background: '#2a1010',
+    border: '2px solid #ff4444',
+    color: '#ff6666'
+  },
+
+  votingButton: {
+    width: '100%',
+    padding: 16,
+    marginBottom: 30,
+    borderRadius: 10,
+    fontWeight: 900,
+    fontSize: 16
+  },
+
+  closeVotingButton: {
+    border: '2px solid #ff4444',
+    background: '#2a1010',
+    color: '#ff6666'
+  },
+
+  openVotingButton: {
+    border: '2px solid #3bd66f',
+    background: '#102a18',
+    color: '#69e891'
   },
 
   result: {
