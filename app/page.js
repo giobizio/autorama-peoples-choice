@@ -23,12 +23,14 @@ function getVoterId() {
 export default function Home() {
   const router = useRouter()
   const warningRef = useRef(null)
+  const closedRef = useRef(null)
 
   const [cars, setCars] = useState([])
   const [selected, setSelected] = useState(null)
   const [message, setMessage] = useState('')
   const [alreadyVoted, setAlreadyVoted] = useState(false)
   const [voting, setVoting] = useState(false)
+  const [votingClosed, setVotingClosed] = useState(false)
 
   useEffect(() => {
     loadCars()
@@ -42,6 +44,15 @@ export default function Home() {
       })
     }
   }, [alreadyVoted])
+
+  useEffect(() => {
+    if (votingClosed && closedRef.current) {
+      closedRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      })
+    }
+  }, [votingClosed])
 
   async function loadCars() {
     const { data, error } = await supabase
@@ -84,6 +95,7 @@ export default function Home() {
     setVoting(true)
     setMessage('')
     setAlreadyVoted(false)
+    setVotingClosed(false)
 
     const voterId = getVoterId()
 
@@ -95,6 +107,13 @@ export default function Home() {
     if (error) {
       setVoting(false)
       setMessage('Errore durante il voto. Riprova.')
+      return
+    }
+
+    if (data === 'voting_closed') {
+      setVoting(false)
+      setVotingClosed(true)
+      setSelected(null)
       return
     }
 
@@ -135,7 +154,7 @@ export default function Home() {
             <button
               key={car.id}
               onClick={() => {
-                if (!voting && !alreadyVoted) {
+                if (!voting && !alreadyVoted && !votingClosed) {
                   setSelected(car.id)
                   setMessage('')
                 }
@@ -178,7 +197,7 @@ export default function Home() {
           ))}
         </div>
 
-        {!alreadyVoted && (
+        {!alreadyVoted && !votingClosed && (
           <button
             onClick={vote}
             disabled={!selected || voting}
@@ -194,6 +213,27 @@ export default function Home() {
               ? 'REGISTRAZIONE...'
               : 'VOTA'}
           </button>
+        )}
+
+        {votingClosed && (
+          <div
+            ref={closedRef}
+            style={styles.votingClosedBox}
+          >
+
+            <div style={styles.lockIcon}>
+              🔒
+            </div>
+
+            <div style={styles.votingClosedTitle}>
+              VOTAZIONI CHIUSE
+            </div>
+
+            <div style={styles.votingClosedText}>
+              Al momento non è possibile votare.
+            </div>
+
+          </div>
         )}
 
         {alreadyVoted && (
@@ -350,6 +390,35 @@ const styles = {
     borderRadius: 12,
     background: '#ffffff',
     color: '#000000'
+  },
+
+  votingClosedBox: {
+    marginTop: 30,
+    padding: '25px 18px',
+    background: '#2a1010',
+    border: '2px solid #ff4444',
+    borderRadius: 16,
+    textAlign: 'center',
+    scrollMargin: '80px 0'
+  },
+
+  lockIcon: {
+    fontSize: 40,
+    marginBottom: 15
+  },
+
+  votingClosedTitle: {
+    color: '#ff5555',
+    fontSize: 'clamp(28px, 8vw, 42px)',
+    lineHeight: 1,
+    fontWeight: 900
+  },
+
+  votingClosedText: {
+    color: '#ffffff',
+    fontSize: 18,
+    lineHeight: 1.5,
+    marginTop: 16
   },
 
   alreadyVotedBox: {
